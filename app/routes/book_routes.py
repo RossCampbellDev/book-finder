@@ -24,11 +24,10 @@ def add_book():
         author = request.form.get("author")
         cover_url = request.form.get("cover_url")
         qty = request.form.get("qty", type=int)
-        price = request.form.get("price", type=float)
         condition = request.form.get("condition", "new")
 
         # Validate required fields
-        if not all([isbn, title, author, qty is not None, price is not None]):
+        if not all([isbn, title, author, qty is not None]):
             flash("All required fields must be filled", "error")
             return render_template("books/add.html")
 
@@ -62,7 +61,6 @@ def add_book():
                 {
                     "$set": {
                         "qty": qty,
-                        "price": price,
                         "condition": condition,
                         "last_updated": datetime.utcnow()
                     }
@@ -75,7 +73,6 @@ def add_book():
                 store_id=current_user._id,
                 isbn=isbn,
                 qty=qty,
-                price=price,
                 condition=condition,
             )
             db_manager.inventory.insert_one(inventory.to_dict())
@@ -111,7 +108,6 @@ def edit_book(isbn):
 
     if request.method == "POST":
         qty = request.form.get("qty", type=int)
-        price = request.form.get("price", type=float)
         condition = request.form.get("condition")
 
         # Update inventory
@@ -120,7 +116,6 @@ def edit_book(isbn):
             {
                 "$set": {
                     "qty": qty,
-                    "price": price,
                     "condition": condition,
                     "last_updated": datetime.utcnow()
                 }

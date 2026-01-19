@@ -167,7 +167,7 @@
                     <div class="store-item">
                         <h4>${store.store_name}</h4>
                         <p>${store.address}</p>
-                        <p><strong>Price:</strong> $${store.price.toFixed(2)} | <strong>Condition:</strong> ${store.condition} | <strong>Qty:</strong> ${store.qty}</p>
+                        <p><strong>Condition:</strong> ${store.condition} | <strong>Qty:</strong> ${store.qty}</p>
                         <p><strong>Hours:</strong> ${store.hours}</p>
                         <p><strong>Contact:</strong> ${store.contact}</p>
                         ${store.website ? `<p><a href="${store.website}" target="_blank">Visit Website</a></p>` : ''}
@@ -181,7 +181,7 @@
                     marker.bindPopup(`
                         <strong>${store.store_name}</strong><br>
                         ${book.title}<br>
-                        Price: $${store.price.toFixed(2)}<br>
+                        Condition: ${store.condition}<br>
                         ${store.address}
                     `);
                     markers.push(marker);

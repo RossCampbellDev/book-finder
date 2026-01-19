@@ -23,7 +23,6 @@
                 <th>Title</th>
                 <th>Author</th>
                 <th>Quantity</th>
-                <th>Price</th>
                 <th>Condition</th>
                 <th>Last Updated</th>
                 <th>Actions</th>
@@ -36,7 +35,6 @@
                 <td>{{ item.book.title if item.book else 'Unknown' }}</td>
                 <td>{{ item.book.author if item.book else 'Unknown' }}</td>
                 <td>{{ item.inventory.qty }}</td>
-                <td>${{ "%.2f"|format(item.inventory.price) }}</td>
                 <td>{{ item.inventory.condition }}</td>
                 <td>{{ item.inventory.last_updated.strftime('%Y-%m-%d') if item.inventory.last_updated else 'N/A' }}</td>
                 <td>

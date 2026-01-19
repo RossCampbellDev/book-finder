@@ -23,7 +23,14 @@ RUN pip install uv
 COPY pyproject.toml ./
 
 # Install Python dependencies using uv
-RUN uv pip install --system --no-cache -r pyproject.toml
+RUN uv pip install --system --no-cache \
+    flask>=3.0.0 \
+    pymongo>=4.6.0 \
+    flask-login>=0.6.3 \
+    python-dotenv>=1.0.0 \
+    gunicorn>=21.2.0 \
+    werkzeug>=3.0.0 \
+    bcrypt>=4.1.0
 
 # Copy application code
 COPY . .

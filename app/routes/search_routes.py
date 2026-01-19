@@ -114,7 +114,6 @@ def search():
                     "contact": store["contact"],
                     "website": store.get("website"),
                     "qty": store_inventory["qty"],
-                    "price": store_inventory["price"],
                     "condition": store_inventory["condition"],
                 })
 

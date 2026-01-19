@@ -27,7 +27,6 @@
             {% if item.store.website %}
             <p><strong>Website:</strong> <a href="{{ item.store.website }}" target="_blank">{{ item.store.website }}</a></p>
             {% endif %}
-            <p><strong>Price:</strong> ${{ "%.2f"|format(item.inventory.price) }}</p>
             <p><strong>Condition:</strong> {{ item.inventory.condition }}</p>
             <p><strong>Quantity Available:</strong> {{ item.inventory.qty }}</p>
         </div>

@@ -286,6 +286,72 @@ main {
     background-color: #f8f9fa;
 }
 
+/* Tooltip */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18px;
+    font-size: 12px;
+    cursor: help;
+    margin-left: 0.5rem;
+    font-weight: bold;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 320px;
+    background-color: #2c3e50;
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    padding: 1rem;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -160px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #2c3e50 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-text ol {
+    margin: 0.5rem 0 0.5rem 1.2rem;
+    padding: 0;
+}
+
+.tooltip-text li {
+    margin: 0.3rem 0;
+}
+
 /* Footer */
 footer {
     background-color: #2c3e50;

@@ -12,7 +12,6 @@ class Inventory:
         store_id: ObjectId,
         isbn: str,
         qty: int,
-        price: float,
         condition: str,
         last_updated: Optional[datetime] = None,
         _id: Optional[ObjectId] = None,
@@ -23,7 +22,6 @@ class Inventory:
             store_id: Reference to Store ObjectId
             isbn: Book ISBN
             qty: Quantity in stock
-            price: Price of the book
             condition: Condition of the book (e.g., 'new', 'used-like-new', 'used-good', 'used-fair')
             last_updated: Last update timestamp
             _id: MongoDB ObjectId
@@ -32,7 +30,6 @@ class Inventory:
         self.store_id = store_id
         self.isbn = isbn
         self.qty = qty
-        self.price = price
         self.condition = condition
         self.last_updated = last_updated or datetime.utcnow()
 
@@ -46,7 +43,6 @@ class Inventory:
             "store_id": self.store_id,
             "isbn": self.isbn,
             "qty": self.qty,
-            "price": self.price,
             "condition": self.condition,
             "last_updated": self.last_updated,
         }
@@ -71,7 +67,6 @@ class Inventory:
             store_id=data["store_id"],
             isbn=data["isbn"],
             qty=data["qty"],
-            price=data["price"],
             condition=data["condition"],
             last_updated=data.get("last_updated", datetime.utcnow()),
         )
