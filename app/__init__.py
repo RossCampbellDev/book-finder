@@ -2,6 +2,10 @@
 import os
 from flask import Flask
 from flask_login import LoginManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+from flask_talisman import Talisman
 from config.config import config
 from app.utils.database import db_manager
 
@@ -23,6 +27,52 @@ def create_app(config_name: str = None) -> Flask:
     # Load configuration
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+
+    # Configure session security
+    app.config['SESSION_COOKIE_SECURE'] = config_name == 'production'
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
+    # Generate secret key if not set
+    if not app.config.get('SECRET_KEY'):
+        import secrets
+        app.config['SECRET_KEY'] = secrets.token_hex(32)
+
+    # Initialize CSRF protection
+    csrf = CSRFProtect()
+    csrf.init_app(app)
+
+    # Initialize rate limiter
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",
+        strategy="fixed-window"
+    )
+
+    # Initialize security headers (Talisman)
+    # Only enforce HTTPS in production
+    if config_name == 'production':
+        Talisman(
+            app,
+            force_https=True,
+            strict_transport_security=True,
+            content_security_policy={
+                'default-src': "'self'",
+                'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+                'style-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+                'img-src': ["'self'", "data:", "https:"],
+            }
+        )
+    else:
+        # Development mode - less strict
+        Talisman(
+            app,
+            force_https=False,
+            content_security_policy=None
+        )
 
     # Initialize database
     db_manager.connect(

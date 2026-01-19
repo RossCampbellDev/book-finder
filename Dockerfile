@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim
+# Use Python 3.12 slim image as base
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
@@ -19,21 +19,11 @@ RUN apt-get update && \
 # Install UV package manager
 RUN pip install uv
 
-# Copy dependency files
-COPY pyproject.toml ./
-
-# Install Python dependencies using uv
-RUN uv pip install --system --no-cache \
-    flask>=3.0.0 \
-    pymongo>=4.6.0 \
-    flask-login>=0.6.3 \
-    python-dotenv>=1.0.0 \
-    gunicorn>=21.2.0 \
-    werkzeug>=3.0.0 \
-    bcrypt>=4.1.0
-
-# Copy application code
+# Copy application code and dependencies file
 COPY . .
+
+# Install the application with its dependencies from pyproject.toml
+RUN uv pip install --system --no-cache .
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser && \

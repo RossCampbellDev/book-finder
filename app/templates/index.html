@@ -46,7 +46,18 @@
 
     // Initialize map
     function initMap() {
-        map = L.map('map').setView([40.7128, -74.0060], 12); // Default to NYC
+        // Center of UK approximately (Manchester area)
+        map = L.map('map', {
+            center: [54.5, -2.5],
+            zoom: 6,
+            // Restrict map bounds to UK area
+            maxBounds: [
+                [49.5, -11.0],  // Southwest coordinates (covers all of Ireland and UK)
+                [61.0, 2.5]     // Northeast coordinates
+            ],
+            maxBoundsViscosity: 1.0,  // Makes bounds "hard" - won't allow dragging outside
+            minZoom: 5  // Prevent zooming out too far
+        });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

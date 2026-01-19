@@ -67,6 +67,11 @@ class DatabaseManager:
         search_index.create_index("title_tokens")
         search_index.create_index("author_tokens")
 
+        # Login attempts collection indexes
+        login_attempts = self._db.login_attempts
+        login_attempts.create_index([("email", 1), ("timestamp", -1)])
+        login_attempts.create_index("timestamp", expireAfterSeconds=2592000)  # Auto-delete after 30 days
+
     def get_database(self) -> Database:
         """Get the database instance.
 
@@ -110,6 +115,11 @@ class DatabaseManager:
     def search_index(self) -> Collection:
         """Get search_index collection."""
         return self.get_collection("search_index")
+
+    @property
+    def login_attempts(self) -> Collection:
+        """Get login_attempts collection."""
+        return self.get_collection("login_attempts")
 
     def close(self) -> None:
         """Close the database connection."""
