@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Store Dashboard - Book Finder{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome, {{ current_user.name }}!</h1>
+    <p>Manage your store's book inventory</p>
+    <div class="dashboard-actions">
+        <a href="{{ url_for('book_routes.add_book') }}" class="btn btn-success">Add New Book</a>
+        <a href="{{ url_for('store_routes.profile') }}" class="btn btn-secondary">Edit Store Profile</a>
+    </div>
+</div>
+
+<div class="inventory-table">
+    <h2 style="padding: 1rem;">Your Inventory ({{ inventory|length }} items)</h2>
+
+    {% if inventory %}
+    <table>
+        <thead>
+            <tr>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Condition</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in inventory %}
+            <tr>
+                <td>{{ item.inventory.isbn }}</td>
+                <td>{{ item.book.title if item.book else 'Unknown' }}</td>
+                <td>{{ item.book.author if item.book else 'Unknown' }}</td>
+                <td>{{ item.inventory.qty }}</td>
+                <td>${{ "%.2f"|format(item.inventory.price) }}</td>
+                <td>{{ item.inventory.condition }}</td>
+                <td>{{ item.inventory.last_updated.strftime('%Y-%m-%d') if item.inventory.last_updated else 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('book_routes.edit_book', isbn=item.inventory.isbn) }}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Edit</a>
+                    <form method="POST" action="{{ url_for('book_routes.delete_book', isbn=item.inventory.isbn) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="return confirm('Are you sure you want to remove this book from your inventory?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="padding: 1rem;">No books in inventory. <a href="{{ url_for('book_routes.add_book') }}">Add your first book</a>!</p>
+    {% endif %}
+</div>
+{% endblock %}

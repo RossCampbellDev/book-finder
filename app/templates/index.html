@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Book Finder - Find Books at Local Stores{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <h1>Find Books at Local Stores</h1>
+    <p>Search by ISBN, book title, or author name</p>
+
+    <div class="search-box">
+        <input type="text" id="searchQuery" placeholder="Enter ISBN, title, or author...">
+        <select id="searchType">
+            <option value="all">All</option>
+            <option value="isbn">ISBN</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+        </select>
+        <button class="btn" onclick="searchBooks()">Search</button>
+    </div>
+
+    <div>
+        <label>
+            <input type="checkbox" id="useLocation" onchange="toggleLocation()">
+            Search near me (uses your location)
+        </label>
+        <div id="locationInfo" style="display: none; margin-top: 0.5rem; color: #7f8c8d;">
+            <small>Location will be used to show nearby stores first</small>
+        </div>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div id="resultsContainer" class="results-container" style="display: none;">
+    <h2>Search Results</h2>
+    <div id="results"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let markers = [];
+    let userLocation = null;
+
+    // Initialize map
+    function initMap() {
+        map = L.map('map').setView([40.7128, -74.0060], 12); // Default to NYC
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+    }
+
+    // Get user location
+    function getUserLocation() {
+        return new Promise((resolve, reject) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setView([userLocation.lat, userLocation.lng], 12);
+
+                        // Add marker for user location
+                        L.marker([userLocation.lat, userLocation.lng], {
+                            icon: L.icon({
+                                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            })
+                        }).addTo(map).bindPopup('Your Location');
+
+                        resolve(userLocation);
+                    },
+                    (error) => {
+                        reject(error);
+                    }
+                );
+            } else {
+                reject(new Error('Geolocation not supported'));
+            }
+        });
+    }
+
+    function toggleLocation() {
+        const useLocation = document.getElementById('useLocation').checked;
+        const locationInfo = document.getElementById('locationInfo');
+
+        if (useLocation) {
+            locationInfo.style.display = 'block';
+            getUserLocation().catch(error => {
+                alert('Could not get your location. Please check browser permissions.');
+                document.getElementById('useLocation').checked = false;
+                locationInfo.style.display = 'none';
+            });
+        } else {
+            locationInfo.style.display = 'none';
+            userLocation = null;
+        }
+    }
+
+    function clearMarkers() {
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+    }
+
+    function searchBooks() {
+        const query = document.getElementById('searchQuery').value.trim();
+        const searchType = document.getElementById('searchType').value;
+
+        if (!query) {
+            alert('Please enter a search query');
+            return;
+        }
+
+        // Build query parameters
+        let queryParams = `q=${encodeURIComponent(query)}&type=${searchType}`;
+
+        if (userLocation) {
+            queryParams += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
+        }
+
+        // Fetch search results
+        fetch(`/search/?${queryParams}`)
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                alert('Search failed. Please try again.');
+            });
+    }
+
+    function displayResults(data) {
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsDiv = document.getElementById('results');
+
+        clearMarkers();
+
+        if (data.results.length === 0) {
+            resultsDiv.innerHTML = '<p>No results found.</p>';
+            resultsContainer.style.display = 'block';
+            return;
+        }
+
+        let html = '';
+        data.results.forEach(book => {
+            html += `
+                <div class="book-result">
+                    <h3>${book.title}</h3>
+                    <p class="author">by ${book.author}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn}</p>
+                    <div class="store-list">
+                        <h4>Available at ${book.stores.length} store(s):</h4>
+            `;
+
+            book.stores.forEach(store => {
+                html += `
+                    <div class="store-item">
+                        <h4>${store.store_name}</h4>
+                        <p>${store.address}</p>
+                        <p><strong>Price:</strong> $${store.price.toFixed(2)} | <strong>Condition:</strong> ${store.condition} | <strong>Qty:</strong> ${store.qty}</p>
+                        <p><strong>Hours:</strong> ${store.hours}</p>
+                        <p><strong>Contact:</strong> ${store.contact}</p>
+                        ${store.website ? `<p><a href="${store.website}" target="_blank">Visit Website</a></p>` : ''}
+                    </div>
+                `;
+
+                // Add marker to map
+                if (store.location && store.location.coordinates) {
+                    const [lng, lat] = store.location.coordinates;
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup(`
+                        <strong>${store.store_name}</strong><br>
+                        ${book.title}<br>
+                        Price: $${store.price.toFixed(2)}<br>
+                        ${store.address}
+                    `);
+                    markers.push(marker);
+                }
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        resultsDiv.innerHTML = html;
+        resultsContainer.style.display = 'block';
+
+        // Fit map to show all markers
+        if (markers.length > 0) {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+
+    // Allow Enter key to search
+    document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchBooks();
+        }
+    });
+
+    // Initialize map on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Book Finder{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">
+                <a href="{{ url_for('main.index') }}">Book Finder</a>
+            </div>
+            <ul>
+                <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('store_routes.dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('book_routes.add_book') }}">Add Book</a></li>
+                    <li><a href="{{ url_for('store_routes.profile') }}">Profile</a></li>
+                    <li><a href="{{ url_for('store_routes.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('store_routes.login') }}">Store Login</a></li>
+                    <li><a href="{{ url_for('store_routes.register') }}">Register Store</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Book Finder. Find books at local stores.</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - Book Finder{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>{{ book.title }}</h1>
+    <p class="author">by {{ book.author }}</p>
+
+    {% if book.cover_url %}
+    <img src="{{ book.cover_url }}" alt="{{ book.title }}" style="max-width: 300px; margin: 1rem 0;">
+    {% endif %}
+
+    <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+
+    <h2>Available at {{ inventory|length }} store(s):</h2>
+
+    {% if inventory %}
+    <div class="store-list">
+        {% for item in inventory %}
+        <div class="store-item">
+            <h3>{{ item.store.name }}</h3>
+            <p><strong>Type:</strong> {{ item.store.get('type', 'bookstore') }}</p>
+            <p><strong>Address:</strong> {{ item.store.address }}</p>
+            <p><strong>Hours:</strong> {{ item.store.hours }}</p>
+            <p><strong>Contact:</strong> {{ item.store.contact }}</p>
+            {% if item.store.website %}
+            <p><strong>Website:</strong> <a href="{{ item.store.website }}" target="_blank">{{ item.store.website }}</a></p>
+            {% endif %}
+            <p><strong>Price:</strong> ${{ "%.2f"|format(item.inventory.price) }}</p>
+            <p><strong>Condition:</strong> {{ item.inventory.condition }}</p>
+            <p><strong>Quantity Available:</strong> {{ item.inventory.qty }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>This book is currently not in stock at any stores.</p>
+    {% endif %}
+
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary" style="margin-top: 1rem;">Back to Search</a>
+</div>
+{% endblock %}

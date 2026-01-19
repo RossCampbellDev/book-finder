@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book - Book Finder{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Add Book to Inventory</h1>
+    <p>Enter book details and inventory information</p>
+
+    <form method="POST" action="{{ url_for('book_routes.add_book') }}">
+        <h3>Book Information</h3>
+
+        <div class="form-group">
+            <label for="isbn">ISBN: *</label>
+            <input type="text" id="isbn" name="isbn" required placeholder="978-0-123456-78-9">
+        </div>
+
+        <div class="form-group">
+            <label for="title">Title: *</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+
+        <div class="form-group">
+            <label for="author">Author: *</label>
+            <input type="text" id="author" name="author" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cover_url">Cover Image URL (optional):</label>
+            <input type="url" id="cover_url" name="cover_url" placeholder="https://example.com/cover.jpg">
+        </div>
+
+        <h3>Inventory Information</h3>
+
+        <div class="form-group">
+            <label for="qty">Quantity: *</label>
+            <input type="number" id="qty" name="qty" required min="0" value="1">
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price: *</label>
+            <input type="number" id="price" name="price" required min="0" step="0.01" placeholder="9.99">
+        </div>
+
+        <div class="form-group">
+            <label for="condition">Condition:</label>
+            <select id="condition" name="condition">
+                <option value="new">New</option>
+                <option value="used-like-new">Used - Like New</option>
+                <option value="used-good">Used - Good</option>
+                <option value="used-fair">Used - Fair</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success">Add Book</button>
+        <a href="{{ url_for('store_routes.dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+
+    <p style="margin-top: 1rem; color: #7f8c8d; font-size: 0.9rem;">
+        <small>* Required fields</small>
+    </p>
+</div>
+{% endblock %}

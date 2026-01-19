@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Store Login - Book Finder{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Store Login</h1>
+    <p>Log in to manage your store's inventory</p>
+
+    <form method="POST" action="{{ url_for('store_routes.login') }}">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+    </form>
+
+    <p style="margin-top: 1rem;">
+        Don't have an account? <a href="{{ url_for('store_routes.register') }}">Register your store</a>
+    </p>
+</div>
+{% endblock %}
