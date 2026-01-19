@@ -64,6 +64,3 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 .tox/
-
-# Project specific
-CLAUDE.md

@@ -1,17 +1,15 @@
 [project]
 name = "book-finder"
 version = "0.1.0"
-description = "A web-based application for tracking books and their locations"
+description = "A simple app for locating special books"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "flask>=3.0.0",
-    "pymongo>=4.6.0",
+    "flask>=3.1.2",
     "flask-login>=0.6.3",
-    "python-dotenv>=1.0.0",
-    "gunicorn>=21.2.0",
-    "werkzeug>=3.0.0",
-    "bcrypt>=4.1.0",
+    "gunicorn>=23.0.0",
+    "pymongo>=4.16.0",
+    "python-dotenv>=1.2.1",
 ]
 
 [project.optional-dependencies]
