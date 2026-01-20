@@ -1,5 +1,7 @@
 """Search index model for efficient book searching."""
-from typing import List, Dict, Any, Optional
+
+from typing import Any
+
 from bson import ObjectId
 
 
@@ -9,9 +11,9 @@ class SearchIndex:
     def __init__(
         self,
         isbn: str,
-        title_tokens: List[str],
-        author_tokens: List[str],
-        _id: Optional[ObjectId] = None,
+        title_tokens: list[str],
+        author_tokens: list[str],
+        _id: ObjectId | None = None,
     ):
         """Initialize a SearchIndex instance.
 
@@ -26,7 +28,7 @@ class SearchIndex:
         self.title_tokens = title_tokens
         self.author_tokens = author_tokens
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert SearchIndex instance to dictionary for MongoDB storage.
 
         Returns:
@@ -44,7 +46,7 @@ class SearchIndex:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SearchIndex":
+    def from_dict(cls, data: dict[str, Any]) -> "SearchIndex":
         """Create a SearchIndex instance from a dictionary.
 
         Args:
@@ -61,7 +63,7 @@ class SearchIndex:
         )
 
     @staticmethod
-    def tokenize(text: str) -> List[str]:
+    def tokenize(text: str) -> list[str]:
         """Tokenize text into searchable words.
 
         Args:
@@ -72,11 +74,11 @@ class SearchIndex:
         """
         # Simple tokenization: lowercase, split on whitespace, remove punctuation
         import re
+
         # Remove punctuation and convert to lowercase
-        clean_text = re.sub(r'[^\w\s]', '', text.lower())
+        clean_text = re.sub(r"[^\w\s]", "", text.lower())
         # Split into words
-        tokens = clean_text.split()
-        return tokens
+        return clean_text.split()
 
     @classmethod
     def create_from_book(cls, isbn: str, title: str, author: str) -> "SearchIndex":

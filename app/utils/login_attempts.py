@@ -1,6 +1,7 @@
 """Login attempt tracking and account lockout functionality."""
-from datetime import datetime, timedelta
-from typing import Optional
+
+from datetime import UTC, datetime, timedelta
+
 from app.utils.database import db_manager
 
 
@@ -19,12 +20,14 @@ class LoginAttemptTracker:
             email: Email address that failed to login
             ip_address: IP address of the request
         """
-        db_manager.login_attempts.insert_one({
-            "email": email.lower(),
-            "ip_address": ip_address,
-            "timestamp": datetime.utcnow(),
-            "successful": False
-        })
+        db_manager.login_attempts.insert_one(
+            {
+                "email": email.lower(),
+                "ip_address": ip_address,
+                "timestamp": datetime.now(UTC),
+                "successful": False,
+            }
+        )
 
     @staticmethod
     def record_successful_login(email: str, ip_address: str) -> None:
@@ -35,21 +38,20 @@ class LoginAttemptTracker:
             ip_address: IP address of the request
         """
         # Record successful login
-        db_manager.login_attempts.insert_one({
-            "email": email.lower(),
-            "ip_address": ip_address,
-            "timestamp": datetime.utcnow(),
-            "successful": True
-        })
+        db_manager.login_attempts.insert_one(
+            {
+                "email": email.lower(),
+                "ip_address": ip_address,
+                "timestamp": datetime.now(UTC),
+                "successful": True,
+            }
+        )
 
         # Clear old failed attempts for this email
-        db_manager.login_attempts.delete_many({
-            "email": email.lower(),
-            "successful": False
-        })
+        db_manager.login_attempts.delete_many({"email": email.lower(), "successful": False})
 
     @staticmethod
-    def is_account_locked(email: str) -> tuple[bool, Optional[datetime]]:
+    def is_account_locked(email: str) -> tuple[bool, datetime | None]:
         """Check if an account is locked due to too many failed attempts.
 
         Args:
@@ -59,13 +61,13 @@ class LoginAttemptTracker:
             Tuple of (is_locked, unlock_time)
         """
         # Get recent failed attempts
-        cutoff_time = datetime.utcnow() - LoginAttemptTracker.ATTEMPT_WINDOW
+        cutoff_time = datetime.now(UTC) - LoginAttemptTracker.ATTEMPT_WINDOW
 
-        failed_attempts = list(db_manager.login_attempts.find({
-            "email": email.lower(),
-            "successful": False,
-            "timestamp": {"$gte": cutoff_time}
-        }).sort("timestamp", -1))
+        failed_attempts = list(
+            db_manager.login_attempts.find(
+                {"email": email.lower(), "successful": False, "timestamp": {"$gte": cutoff_time}}
+            ).sort("timestamp", -1)
+        )
 
         if len(failed_attempts) >= LoginAttemptTracker.MAX_ATTEMPTS:
             # Account is locked - calculate unlock time
@@ -73,16 +75,13 @@ class LoginAttemptTracker:
             unlock_time = latest_attempt + LoginAttemptTracker.LOCKOUT_DURATION
 
             # Check if still locked
-            if datetime.utcnow() < unlock_time:
+            if datetime.now(UTC) < unlock_time:
                 return True, unlock_time
-            else:
-                # Lockout period has expired, clear old attempts
-                db_manager.login_attempts.delete_many({
-                    "email": email.lower(),
-                    "successful": False,
-                    "timestamp": {"$lt": unlock_time}
-                })
-                return False, None
+            # Lockout period has expired, clear old attempts
+            db_manager.login_attempts.delete_many(
+                {"email": email.lower(), "successful": False, "timestamp": {"$lt": unlock_time}}
+            )
+            return False, None
 
         return False, None
 
@@ -96,13 +95,11 @@ class LoginAttemptTracker:
         Returns:
             Number of remaining attempts
         """
-        cutoff_time = datetime.utcnow() - LoginAttemptTracker.ATTEMPT_WINDOW
+        cutoff_time = datetime.now(UTC) - LoginAttemptTracker.ATTEMPT_WINDOW
 
-        failed_count = db_manager.login_attempts.count_documents({
-            "email": email.lower(),
-            "successful": False,
-            "timestamp": {"$gte": cutoff_time}
-        })
+        failed_count = db_manager.login_attempts.count_documents(
+            {"email": email.lower(), "successful": False, "timestamp": {"$gte": cutoff_time}}
+        )
 
         remaining = LoginAttemptTracker.MAX_ATTEMPTS - failed_count
         return max(0, remaining)
@@ -114,10 +111,8 @@ class LoginAttemptTracker:
         Returns:
             Number of records deleted
         """
-        cutoff_time = datetime.utcnow() - timedelta(days=30)
+        cutoff_time = datetime.now(UTC) - timedelta(days=30)
 
-        result = db_manager.login_attempts.delete_many({
-            "timestamp": {"$lt": cutoff_time}
-        })
+        result = db_manager.login_attempts.delete_many({"timestamp": {"$lt": cutoff_time}})
 
         return result.deleted_count

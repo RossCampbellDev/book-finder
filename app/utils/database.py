@@ -1,22 +1,24 @@
 """Database connection and management utilities."""
+
 import os
 from typing import Optional
-from pymongo import MongoClient, GEOSPHERE
-from pymongo.database import Database
+
+from pymongo import GEOSPHERE, MongoClient
 from pymongo.collection import Collection
+from pymongo.database import Database
 
 
 class DatabaseManager:
     """Manages MongoDB database connections and collections."""
 
     _instance: Optional["DatabaseManager"] = None
-    _client: Optional[MongoClient] = None
-    _db: Optional[Database] = None
+    _client: MongoClient | None = None
+    _db: Database | None = None
 
     def __new__(cls):
         """Singleton pattern to ensure only one database connection."""
         if cls._instance is None:
-            cls._instance = super(DatabaseManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):
@@ -24,7 +26,7 @@ class DatabaseManager:
         if not hasattr(self, "initialized"):
             self.initialized = True
 
-    def connect(self, uri: Optional[str] = None, db_name: Optional[str] = None) -> None:
+    def connect(self, uri: str | None = None, db_name: str | None = None) -> None:
         """Connect to MongoDB database.
 
         Args:
@@ -70,7 +72,9 @@ class DatabaseManager:
         # Login attempts collection indexes
         login_attempts = self._db.login_attempts
         login_attempts.create_index([("email", 1), ("timestamp", -1)])
-        login_attempts.create_index("timestamp", expireAfterSeconds=2592000)  # Auto-delete after 30 days
+        login_attempts.create_index(
+            "timestamp", expireAfterSeconds=2592000
+        )  # Auto-delete after 30 days
 
     def get_database(self) -> Database:
         """Get the database instance.

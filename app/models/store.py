@@ -1,6 +1,8 @@
 """Store model for bookstore data."""
-from datetime import datetime
-from typing import Optional, Dict, Any
+
+from datetime import UTC, datetime
+from typing import Any
+
 from bson import ObjectId
 
 
@@ -16,12 +18,12 @@ class Store:
         address: str,
         hours: str,
         contact: str,
-        website: Optional[str] = None,
-        encoded_store_photo: Optional[str] = None,
-        password_hash: Optional[str] = None,
-        email: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-        created_at: Optional[datetime] = None,
+        website: str | None = None,
+        encoded_store_photo: str | None = None,
+        password_hash: str | None = None,
+        email: str | None = None,
+        _id: ObjectId | None = None,
+        created_at: datetime | None = None,
     ):
         """Initialize a Store instance.
 
@@ -52,9 +54,9 @@ class Store:
         self.encoded_store_photo = encoded_store_photo
         self.password_hash = password_hash
         self.email = email
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(UTC)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert Store instance to dictionary for MongoDB storage.
 
         Returns:
@@ -65,7 +67,7 @@ class Store:
             "type": self.store_type,
             "location": {
                 "type": "Point",
-                "coordinates": [self.longitude, self.latitude]  # GeoJSON format [lng, lat]
+                "coordinates": [self.longitude, self.latitude],  # GeoJSON format [lng, lat]
             },
             "address": self.address,
             "hours": self.hours,
@@ -87,7 +89,7 @@ class Store:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Store":
+    def from_dict(cls, data: dict[str, Any]) -> "Store":
         """Create a Store instance from a dictionary.
 
         Args:

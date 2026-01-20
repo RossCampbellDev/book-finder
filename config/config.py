@@ -1,4 +1,5 @@
 """Application configuration settings."""
+
 import os
 from typing import Any
 
@@ -32,7 +33,6 @@ class Config:
         Args:
             app: Flask application instance
         """
-        pass
 
 
 class DevelopmentConfig(Config):

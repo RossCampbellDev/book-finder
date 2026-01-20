@@ -1,5 +1,7 @@
 """Book model for book data."""
-from typing import Optional, Dict, Any
+
+from typing import Any
+
 from bson import ObjectId
 
 
@@ -11,9 +13,9 @@ class Book:
         isbn: str,
         title: str,
         author: str,
-        cover_url: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        _id: Optional[ObjectId] = None,
+        cover_url: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        _id: ObjectId | None = None,
     ):
         """Initialize a Book instance.
 
@@ -32,7 +34,7 @@ class Book:
         self.cover_url = cover_url
         self.metadata = metadata or {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert Book instance to dictionary for MongoDB storage.
 
         Returns:
@@ -53,7 +55,7 @@ class Book:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Book":
+    def from_dict(cls, data: dict[str, Any]) -> "Book":
         """Create a Book instance from a dictionary.
 
         Args:

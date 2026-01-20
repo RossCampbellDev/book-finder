@@ -1,24 +1,22 @@
 """Store management and authentication routes."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_user, logout_user, login_required, current_user
+
+from datetime import UTC, datetime
+
+import bcrypt
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import bcrypt
-from bson import ObjectId
-from datetime import datetime
+from flask_login import current_user, login_required, login_user, logout_user
 
 from app.models import Store
 from app.utils.database import db_manager
-from app.utils.security import SecurityValidator
 from app.utils.login_attempts import LoginAttemptTracker
+from app.utils.security import SecurityValidator
 
 store_bp = Blueprint("store_routes", __name__)
 
 # Initialize rate limiter for this blueprint
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri="memory://"
-)
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
 
 @store_bp.route("/login", methods=["GET", "POST"])
@@ -51,8 +49,11 @@ def login():
             # Check if account is locked
             is_locked, unlock_time = LoginAttemptTracker.is_account_locked(email)
             if is_locked:
-                remaining = (unlock_time - datetime.utcnow()).seconds // 60
-                flash(f"Account is locked due to too many failed attempts. Try again in {remaining} minutes.", "error")
+                remaining = (unlock_time - datetime.now(UTC)).seconds // 60
+                flash(
+                    f"Account is locked due to too many failed attempts. Try again in {remaining} minutes.",
+                    "error",
+                )
                 return render_template("store/login.html")
 
             # Sanitize email to prevent NoSQL injection
@@ -61,17 +62,19 @@ def login():
             # Find store by email
             store_data = db_manager.stores.find_one({"email": safe_email})
 
-            if store_data and store_data.get("password_hash"):
-                # Verify password
-                if bcrypt.checkpw(password.encode("utf-8"), store_data["password_hash"]):
-                    store = Store.from_dict(store_data)
-                    login_user(store)
+            if (
+                store_data
+                and store_data.get("password_hash")
+                and bcrypt.checkpw(password.encode("utf-8"), store_data["password_hash"])
+            ):
+                store = Store.from_dict(store_data)
+                login_user(store)
 
-                    # Record successful login
-                    LoginAttemptTracker.record_successful_login(email, request.remote_addr)
+                # Record successful login
+                LoginAttemptTracker.record_successful_login(email, request.remote_addr)
 
-                    flash(f"Welcome back, {store.name}!", "success")
-                    return redirect(url_for("store_routes.dashboard"))
+                flash(f"Welcome back, {store.name}!", "success")
+                return redirect(url_for("store_routes.dashboard"))
 
             # Record failed attempt
             LoginAttemptTracker.record_failed_attempt(email, request.remote_addr)
@@ -79,13 +82,15 @@ def login():
             # Get remaining attempts
             remaining_attempts = LoginAttemptTracker.get_remaining_attempts(email)
             if remaining_attempts > 0:
-                flash(f"Invalid email or password. {remaining_attempts} attempts remaining.", "error")
+                flash(
+                    f"Invalid email or password. {remaining_attempts} attempts remaining.", "error"
+                )
             else:
                 flash("Too many failed attempts. Account locked for 15 minutes.", "error")
 
         except ValueError as e:
             flash(f"Invalid input: {str(e)}", "error")
-        except Exception as e:
+        except Exception:
             flash("An error occurred during login. Please try again.", "error")
 
     return render_template("store/login.html")
@@ -106,15 +111,30 @@ def register():
             email = request.form.get("email", "").strip().lower()
             password = request.form.get("password", "")
             store_type = request.form.get("store_type", "bookstore")
-            address = SecurityValidator.sanitize_string(request.form.get("address", ""), max_length=500)
+            address = SecurityValidator.sanitize_string(
+                request.form.get("address", ""), max_length=500
+            )
             latitude = request.form.get("latitude", type=float)
             longitude = request.form.get("longitude", type=float)
             hours = SecurityValidator.sanitize_string(request.form.get("hours", ""), max_length=200)
-            contact = SecurityValidator.sanitize_string(request.form.get("contact", ""), max_length=50)
+            contact = SecurityValidator.sanitize_string(
+                request.form.get("contact", ""), max_length=50
+            )
             website = request.form.get("website", "").strip()
 
             # Validate required fields
-            if not all([name, email, password, address, latitude is not None, longitude is not None, hours, contact]):
+            if not all(
+                [
+                    name,
+                    email,
+                    password,
+                    address,
+                    latitude is not None,
+                    longitude is not None,
+                    hours,
+                    contact,
+                ]
+            ):
                 flash("All required fields must be filled", "error")
                 return render_template("store/register.html")
 
@@ -126,7 +146,9 @@ def register():
             email = email_result  # Use normalized email
 
             # Validate password strength
-            is_valid_password, password_error = SecurityValidator.validate_password_strength(password)
+            is_valid_password, password_error = SecurityValidator.validate_password_strength(
+                password
+            )
             if not is_valid_password:
                 flash(password_error, "error")
                 return render_template("store/register.html")
@@ -150,7 +172,7 @@ def register():
             # Sanitize website URL
             if website:
                 website = SecurityValidator.sanitize_string(website, max_length=500)
-                if not (website.startswith("http://") or website.startswith("https://")):
+                if not website.startswith(("http://", "https://")):
                     flash("Website must start with http:// or https://", "error")
                     return render_template("store/register.html")
 
@@ -190,7 +212,7 @@ def register():
         except ValueError as e:
             flash(f"Invalid input: {str(e)}", "error")
             return render_template("store/register.html")
-        except Exception as e:
+        except Exception:
             flash("An error occurred during registration. Please try again.", "error")
             return render_template("store/register.html")
 
@@ -225,10 +247,7 @@ def dashboard():
     inventory_with_books = []
     for inv in inventory_data:
         book_data = db_manager.books.find_one({"isbn": inv["isbn"]})
-        inventory_with_books.append({
-            "inventory": inv,
-            "book": book_data
-        })
+        inventory_with_books.append({"inventory": inv, "book": book_data})
 
     return render_template("store/dashboard.html", inventory=inventory_with_books)
 
@@ -266,7 +285,7 @@ def profile():
             website = request.form.get("website")
             if website:
                 website = SecurityValidator.sanitize_string(website, max_length=500)
-                if not (website.startswith("http://") or website.startswith("https://")):
+                if not website.startswith(("http://", "https://")):
                     flash("Website must start with http:// or https://", "error")
                     return render_template("store/profile.html")
                 update_data["website"] = website
@@ -286,16 +305,10 @@ def profile():
                     flash(lng_error, "error")
                     return render_template("store/profile.html")
 
-                update_data["location"] = {
-                    "type": "Point",
-                    "coordinates": [longitude, latitude]
-                }
+                update_data["location"] = {"type": "Point", "coordinates": [longitude, latitude]}
 
             if update_data:
-                db_manager.stores.update_one(
-                    {"_id": current_user._id},
-                    {"$set": update_data}
-                )
+                db_manager.stores.update_one({"_id": current_user._id}, {"$set": update_data})
                 flash("Profile updated successfully", "success")
 
             return redirect(url_for("store_routes.dashboard"))
@@ -303,7 +316,7 @@ def profile():
         except ValueError as e:
             flash(f"Invalid input: {str(e)}", "error")
             return render_template("store/profile.html")
-        except Exception as e:
+        except Exception:
             flash("An error occurred while updating profile. Please try again.", "error")
             return render_template("store/profile.html")
 

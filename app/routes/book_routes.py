@@ -1,10 +1,11 @@
 """Book and inventory management routes."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
+
+from datetime import UTC, datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from bson import ObjectId
-from datetime import datetime
+from flask_login import current_user, login_required
 
 from app.models import Book, Inventory, SearchIndex
 from app.utils.database import db_manager
@@ -13,10 +14,7 @@ from app.utils.security import SecurityValidator
 book_bp = Blueprint("book_routes", __name__)
 
 # Initialize rate limiter for this blueprint
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri="memory://"
-)
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
 
 @book_bp.route("/add", methods=["GET", "POST"])
@@ -68,7 +66,7 @@ def add_book():
             safe_cover_url = None
             if cover_url:
                 safe_cover_url = SecurityValidator.sanitize_string(cover_url, max_length=500)
-                if not (safe_cover_url.startswith("http://") or safe_cover_url.startswith("https://")):
+                if not safe_cover_url.startswith(("http://", "https://")):
                     flash("Cover URL must start with http:// or https://", "error")
                     return render_template("books/add.html")
 
@@ -90,10 +88,9 @@ def add_book():
                 db_manager.search_index.insert_one(search_index.to_dict())
 
             # Check if inventory already exists for this store and book
-            existing_inventory = db_manager.inventory.find_one({
-                "store_id": current_user._id,
-                "isbn": isbn
-            })
+            existing_inventory = db_manager.inventory.find_one(
+                {"store_id": current_user._id, "isbn": isbn}
+            )
 
             if existing_inventory:
                 # Update existing inventory
@@ -103,9 +100,9 @@ def add_book():
                         "$set": {
                             "qty": qty,
                             "condition": condition,
-                            "last_updated": datetime.utcnow()
+                            "last_updated": datetime.now(UTC),
                         }
-                    }
+                    },
                 )
                 flash("Book inventory updated successfully", "success")
             else:
@@ -124,7 +121,7 @@ def add_book():
         except ValueError as e:
             flash(f"Invalid input: {str(e)}", "error")
             return render_template("books/add.html")
-        except Exception as e:
+        except Exception:
             flash("An error occurred while adding the book. Please try again.", "error")
             return render_template("books/add.html")
 
@@ -147,10 +144,9 @@ def edit_book(isbn):
         safe_isbn = SecurityValidator.sanitize_string(isbn, max_length=20)
 
         # Get inventory for current store and book
-        inventory_data = db_manager.inventory.find_one({
-            "store_id": current_user._id,
-            "isbn": safe_isbn
-        })
+        inventory_data = db_manager.inventory.find_one(
+            {"store_id": current_user._id, "isbn": safe_isbn}
+        )
 
         if not inventory_data:
             flash("Book not found in your inventory", "error")
@@ -177,13 +173,7 @@ def edit_book(isbn):
             # Update inventory
             db_manager.inventory.update_one(
                 {"_id": inventory_data["_id"]},
-                {
-                    "$set": {
-                        "qty": qty,
-                        "condition": condition,
-                        "last_updated": datetime.utcnow()
-                    }
-                }
+                {"$set": {"qty": qty, "condition": condition, "last_updated": datetime.now(UTC)}},
             )
             flash("Book inventory updated successfully", "success")
             return redirect(url_for("store_routes.dashboard"))
@@ -193,7 +183,7 @@ def edit_book(isbn):
     except ValueError as e:
         flash(f"Invalid input: {str(e)}", "error")
         return redirect(url_for("store_routes.dashboard"))
-    except Exception as e:
+    except Exception:
         flash("An error occurred while editing the book. Please try again.", "error")
         return redirect(url_for("store_routes.dashboard"))
 
@@ -214,10 +204,7 @@ def delete_book(isbn):
         safe_isbn = SecurityValidator.sanitize_string(isbn, max_length=20)
 
         # Delete inventory entry
-        result = db_manager.inventory.delete_one({
-            "store_id": current_user._id,
-            "isbn": safe_isbn
-        })
+        result = db_manager.inventory.delete_one({"store_id": current_user._id, "isbn": safe_isbn})
 
         if result.deleted_count > 0:
             flash("Book removed from inventory", "success")
@@ -229,7 +216,7 @@ def delete_book(isbn):
     except ValueError as e:
         flash(f"Invalid input: {str(e)}", "error")
         return redirect(url_for("store_routes.dashboard"))
-    except Exception as e:
+    except Exception:
         flash("An error occurred while deleting the book. Please try again.", "error")
         return redirect(url_for("store_routes.dashboard"))
 
@@ -263,20 +250,13 @@ def book_detail(isbn):
         for inv in inventory_data:
             store_data = db_manager.stores.find_one({"_id": inv["store_id"]})
             if store_data:
-                inventory_with_stores.append({
-                    "inventory": inv,
-                    "store": store_data
-                })
+                inventory_with_stores.append({"inventory": inv, "store": store_data})
 
-        return render_template(
-            "books/detail.html",
-            book=book_data,
-            inventory=inventory_with_stores
-        )
+        return render_template("books/detail.html", book=book_data, inventory=inventory_with_stores)
 
     except ValueError as e:
         flash(f"Invalid input: {str(e)}", "error")
         return redirect(url_for("main.index"))
-    except Exception as e:
+    except Exception:
         flash("An error occurred while loading book details. Please try again.", "error")
         return redirect(url_for("main.index"))

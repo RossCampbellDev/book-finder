@@ -1,6 +1,8 @@
 """Inventory model for tracking book stock at stores."""
-from datetime import datetime
-from typing import Optional, Dict, Any
+
+from datetime import UTC, datetime
+from typing import Any
+
 from bson import ObjectId
 
 
@@ -13,8 +15,8 @@ class Inventory:
         isbn: str,
         qty: int,
         condition: str,
-        last_updated: Optional[datetime] = None,
-        _id: Optional[ObjectId] = None,
+        last_updated: datetime | None = None,
+        _id: ObjectId | None = None,
     ):
         """Initialize an Inventory instance.
 
@@ -31,9 +33,9 @@ class Inventory:
         self.isbn = isbn
         self.qty = qty
         self.condition = condition
-        self.last_updated = last_updated or datetime.utcnow()
+        self.last_updated = last_updated or datetime.now(UTC)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert Inventory instance to dictionary for MongoDB storage.
 
         Returns:
@@ -53,7 +55,7 @@ class Inventory:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Inventory":
+    def from_dict(cls, data: dict[str, Any]) -> "Inventory":
         """Create an Inventory instance from a dictionary.
 
         Args:
@@ -68,7 +70,7 @@ class Inventory:
             isbn=data["isbn"],
             qty=data["qty"],
             condition=data["condition"],
-            last_updated=data.get("last_updated", datetime.utcnow()),
+            last_updated=data.get("last_updated", datetime.now(UTC)),
         )
 
     def __repr__(self) -> str:

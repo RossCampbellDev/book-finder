@@ -1,8 +1,8 @@
 """Search functionality routes."""
-from flask import Blueprint, request, jsonify, render_template
+
+from flask import Blueprint, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from typing import List, Dict, Any
 
 from app.models import SearchIndex
 from app.utils.database import db_manager
@@ -11,10 +11,7 @@ from app.utils.security import SecurityValidator
 search_bp = Blueprint("search_routes", __name__)
 
 # Initialize rate limiter for this blueprint
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri="memory://"
-)
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
 
 @search_bp.route("/")
@@ -89,7 +86,11 @@ def search():
 
             if search_conditions:
                 # Search in search index
-                search_query = {"$or": search_conditions} if len(search_conditions) > 1 else search_conditions[0]
+                search_query = (
+                    {"$or": search_conditions}
+                    if len(search_conditions) > 1
+                    else search_conditions[0]
+                )
                 search_results = db_manager.search_index.find(search_query)
 
                 # Get book details for search results
@@ -121,11 +122,8 @@ def search():
                 # Geospatial query for nearby stores
                 store_query["location"] = {
                     "$near": {
-                        "$geometry": {
-                            "type": "Point",
-                            "coordinates": [lng, lat]
-                        },
-                        "$maxDistance": max_distance
+                        "$geometry": {"type": "Point", "coordinates": [lng, lat]},
+                        "$maxDistance": max_distance,
                     }
                 }
 
@@ -134,43 +132,48 @@ def search():
             for store in stores:
                 # Find inventory for this store
                 store_inventory = next(
-                    (inv for inv in inventory_items if inv["store_id"] == store["_id"]),
-                    None
+                    (inv for inv in inventory_items if inv["store_id"] == store["_id"]), None
                 )
 
                 if store_inventory:
-                    stores_with_inventory.append({
-                        "store_id": str(store["_id"]),
-                        "store_name": store["name"],
-                        "store_type": store.get("type", "bookstore"),
-                        "address": store["address"],
-                        "location": store.get("location", {}),
-                        "hours": store["hours"],
-                        "contact": store["contact"],
-                        "website": store.get("website"),
-                        "qty": store_inventory["qty"],
-                        "condition": store_inventory["condition"],
-                    })
+                    stores_with_inventory.append(
+                        {
+                            "store_id": str(store["_id"]),
+                            "store_name": store["name"],
+                            "store_type": store.get("type", "bookstore"),
+                            "address": store["address"],
+                            "location": store.get("location", {}),
+                            "hours": store["hours"],
+                            "contact": store["contact"],
+                            "website": store.get("website"),
+                            "qty": store_inventory["qty"],
+                            "condition": store_inventory["condition"],
+                        }
+                    )
 
             if stores_with_inventory:
-                enhanced_results.append({
-                    "isbn": book["isbn"],
-                    "title": book["title"],
-                    "author": book["author"],
-                    "cover_url": book.get("cover_url"),
-                    "stores": stores_with_inventory,
-                })
+                enhanced_results.append(
+                    {
+                        "isbn": book["isbn"],
+                        "title": book["title"],
+                        "author": book["author"],
+                        "cover_url": book.get("cover_url"),
+                        "stores": stores_with_inventory,
+                    }
+                )
 
-        return jsonify({
-            "results": enhanced_results,
-            "count": len(enhanced_results),
-            "query": query,
-            "search_type": search_type,
-        })
+        return jsonify(
+            {
+                "results": enhanced_results,
+                "count": len(enhanced_results),
+                "query": query,
+                "search_type": search_type,
+            }
+        )
 
     except ValueError as e:
         return jsonify({"error": f"Invalid input: {str(e)}"}), 400
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "An error occurred during search. Please try again."}), 500
 
 
@@ -205,12 +208,7 @@ def autocomplete():
 
         # Search for matching books
         search_results = db_manager.search_index.find(
-            {
-                "$or": [
-                    {"title_tokens": {"$in": tokens}},
-                    {"author_tokens": {"$in": tokens}}
-                ]
-            }
+            {"$or": [{"title_tokens": {"$in": tokens}}, {"author_tokens": {"$in": tokens}}]}
         ).limit(limit)
 
         # Get book details
@@ -230,5 +228,5 @@ def autocomplete():
 
     except ValueError as e:
         return jsonify({"error": f"Invalid input: {str(e)}"}), 400
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "An error occurred. Please try again."}), 500

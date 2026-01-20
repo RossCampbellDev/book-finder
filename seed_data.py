@@ -8,15 +8,17 @@ Run this script from within the web container:
 Or run locally if you have the dependencies:
     python seed_data.py
 """
-import os
+
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
+
 import bcrypt
 
 # Add the app directory to the path
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from app.models import Store, Book, Inventory, SearchIndex
+from app.models import Book, Inventory, SearchIndex, Store
 from app.utils.database import db_manager
 
 
@@ -35,7 +37,7 @@ def create_test_stores():
             "longitude": -2.2426,
             "hours": "Mon-Sat 9AM-8PM, Sun 10AM-6PM",
             "contact": "0161 555 0101",
-            "website": "https://booknook.example.com"
+            "website": "https://booknook.example.com",
         },
         {
             "name": "City Library",
@@ -47,7 +49,7 @@ def create_test_stores():
             "longitude": -1.5491,
             "hours": "Mon-Fri 8AM-9PM, Sat-Sun 10AM-6PM",
             "contact": "0113 555 0102",
-            "website": "https://citylibrary.example.com"
+            "website": "https://citylibrary.example.com",
         },
         {
             "name": "Second Hand Stories",
@@ -59,7 +61,7 @@ def create_test_stores():
             "longitude": -2.9814,
             "hours": "Mon-Sun 10AM-7PM",
             "contact": "0151 555 0103",
-            "website": None
+            "website": None,
         },
         {
             "name": "Academic Book Store",
@@ -71,8 +73,8 @@ def create_test_stores():
             "longitude": -1.6178,
             "hours": "Mon-Fri 9AM-6PM",
             "contact": "0191 555 0104",
-            "website": "https://academicbooks.example.com"
-        }
+            "website": "https://academicbooks.example.com",
+        },
     ]
 
     created_stores = []
@@ -98,7 +100,7 @@ def create_test_stores():
             longitude=store_data["longitude"],
             hours=store_data["hours"],
             contact=store_data["contact"],
-            website=store_data["website"]
+            website=store_data["website"],
         )
 
         result = db_manager.stores.insert_one(store.to_dict())
@@ -118,62 +120,62 @@ def create_test_books():
             "isbn": "978-0-06-112008-4",
             "title": "To Kill a Mockingbird",
             "author": "Harper Lee",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-14-028329-5",
             "title": "1984",
             "author": "George Orwell",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-7432-7356-5",
             "title": "The Great Gatsby",
             "author": "F. Scott Fitzgerald",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-452-28423-4",
             "title": "Pride and Prejudice",
             "author": "Jane Austen",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-06-093546-7",
             "title": "The Catcher in the Rye",
             "author": "J.D. Salinger",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-316-76948-0",
             "title": "The Lord of the Rings",
             "author": "J.R.R. Tolkien",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-14-243723-0",
             "title": "Animal Farm",
             "author": "George Orwell",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-7434-3487-1",
             "title": "Brave New World",
             "author": "Aldous Huxley",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-06-112241-5",
             "title": "Where the Wild Things Are",
             "author": "Maurice Sendak",
-            "cover_url": None
+            "cover_url": None,
         },
         {
             "isbn": "978-0-545-01022-1",
             "title": "Harry Potter and the Deathly Hallows",
             "author": "J.K. Rowling",
-            "cover_url": None
-        }
+            "cover_url": None,
+        },
     ]
 
     created_books = []
@@ -190,7 +192,7 @@ def create_test_books():
             isbn=book_data["isbn"],
             title=book_data["title"],
             author=book_data["author"],
-            cover_url=book_data["cover_url"]
+            cover_url=book_data["cover_url"],
         )
 
         result = db_manager.books.insert_one(book.to_dict())
@@ -199,9 +201,7 @@ def create_test_books():
 
         # Create search index
         search_index = SearchIndex.create_from_book(
-            book_data["isbn"],
-            book_data["title"],
-            book_data["author"]
+            book_data["isbn"], book_data["title"], book_data["author"]
         )
         db_manager.search_index.insert_one(search_index.to_dict())
 
@@ -219,9 +219,9 @@ def create_test_inventory(stores, books):
     # Define which books each store has
     inventory_mapping = {
         0: [0, 1, 2, 3, 4, 5],  # The Book Nook has first 6 books
-        1: [0, 1, 2, 6, 7],     # City Library has different selection
-        2: [1, 3, 4, 8],        # Second Hand Stories has used books
-        3: [2, 5, 6, 7, 9]      # Academic Book Store has academic titles
+        1: [0, 1, 2, 6, 7],  # City Library has different selection
+        2: [1, 3, 4, 8],  # Second Hand Stories has used books
+        3: [2, 5, 6, 7, 9],  # Academic Book Store has academic titles
     }
 
     conditions = ["new", "used-like-new", "used-good", "used-fair"]
@@ -233,10 +233,7 @@ def create_test_inventory(stores, books):
             book = books[book_idx]
 
             # Check if inventory already exists
-            existing = db_manager.inventory.find_one({
-                "store_id": store._id,
-                "isbn": book.isbn
-            })
+            existing = db_manager.inventory.find_one({"store_id": store._id, "isbn": book.isbn})
 
             if existing:
                 print(f"  ✓ Inventory for '{book.title}' at '{store.name}' already exists")
@@ -252,11 +249,13 @@ def create_test_inventory(stores, books):
                 isbn=book.isbn,
                 qty=qty,
                 condition=condition,
-                last_updated=datetime.utcnow()
+                last_updated=datetime.now(UTC),
             )
 
             db_manager.inventory.insert_one(inventory.to_dict())
-            print(f"  ✓ Added '{book.title}' to '{store.name}' (qty: {qty}, condition: {condition})")
+            print(
+                f"  ✓ Added '{book.title}' to '{store.name}' (qty: {qty}, condition: {condition})"
+            )
 
 
 def main():
@@ -279,10 +278,10 @@ def main():
         print("\n" + "=" * 60)
         print("✓ Database seeding completed successfully!")
         print("=" * 60)
-        print(f"\nCreated/verified:")
+        print("\nCreated/verified:")
         print(f"  - {len(stores)} stores")
         print(f"  - {len(books)} books")
-        print(f"  - Inventory entries")
+        print("  - Inventory entries")
         print("\nTest credentials (all stores):")
         print("  Password: password123")
         print("\nStores:")
@@ -292,6 +291,7 @@ def main():
     except Exception as e:
         print(f"\n✗ Error seeding database: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
